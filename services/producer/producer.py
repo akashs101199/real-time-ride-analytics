@@ -1,6 +1,11 @@
-import json, os, random, time
+import json
+import os
+import random
+import time
 from datetime import datetime, timezone, timedelta
+
 from kafka import KafkaProducer
+from kafka.errors import NoBrokersAvailable
 from prometheus_client import Counter, Gauge, start_http_server
 
 BROKER = os.getenv("KAFKA_BROKER", "kafka:9092")
@@ -12,12 +17,13 @@ rate_gauge = Gauge("producer_target_msgs_per_sec", "Target send rate per second"
 
 cities = ["Austin", "Chicago", "NYC", "SF", "Seattle"]
 
+
 def make_event():
     now = datetime.now(timezone.utc)
     pickup = now - timedelta(seconds=random.randint(0, 30))
-    duration = random.expovariate(1/600)  # avg 10 min, long-tail
+    duration = random.expovariate(1 / 600)  # avg 10 min, long-tail
     dropoff = pickup + timedelta(seconds=duration)
-    fare = round(max(3.0, random.gauss(18, 7) + (duration/300)), 2)
+    fare = round(max(3.0, random.gauss(18, 7) + (duration / 300)), 2)
     return {
         "event_time": now.isoformat(),
         "ride_id": random.randint(1_000_000, 9_999_999),
@@ -29,9 +35,29 @@ def make_event():
         "status": "completed",
     }
 
+
+def get_producer():
+    """Create a Kafka producer with a retry mechanism."""
+    retries = 5
+    for i in range(retries):
+        try:
+            print(f"Connecting to Kafka broker at {BROKER} (attempt {i+1}/{retries})...")
+            producer = KafkaProducer(
+                bootstrap_servers=BROKER,
+                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+            )
+            print("Successfully connected to Kafka.")
+            return producer
+        except NoBrokersAvailable:
+            print("Kafka broker not available. Retrying in 5 seconds...")
+            time.sleep(5)
+    raise ConnectionError("Could not connect to Kafka after several retries.")
+
+
 if __name__ == "__main__":
     start_http_server(8000)
-    producer = KafkaProducer(bootstrap_servers=BROKER, value_serializer=lambda v: json.dumps(v).encode("utf-8"))
+    producer = get_producer()
+
     target_rate = 200  # msgs/sec (tweak as needed)
     rate_gauge.set(target_rate)
     interval = 0.1

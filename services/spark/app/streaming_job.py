@@ -19,11 +19,7 @@ POSTGRES_TABLE = "public.rides_minute_metrics"
 WINDOW = os.getenv("WINDOW", "1 minute")
 WATERMARK = os.getenv("WATERMARK", "30 seconds")
 
-# Choose how to write aggregates:
-#  - "update_append" (default): keep every update (versioned history)
-#  - "complete_overwrite": one row per window/city; table is fully refreshed each batch
 AGG_WRITE_STRATEGY = os.getenv("AGG_WRITE_STRATEGY", "update_append").lower()
-
 
 def build_spark() -> SparkSession:
     spark = (

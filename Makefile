@@ -1,19 +1,34 @@
-    .PHONY: up down logs ps restart clean topics
+# Makefile for real-time-pipeline
 
-    up:
-		docker compose up -d --build
+SHELL := /bin/bash
+COMPOSE := docker compose
+PROJECT := real-time-pipeline
 
-    down:
-		docker compose down -v
+.PHONY: up down restart logs ps build clean stop pull
 
-    logs:
-		docker compose logs -f --tail=200
+up:
+	$(COMPOSE) up -d --build
 
-    ps:
-		docker compose ps
+down:
+	$(COMPOSE) down -v
 
-    restart:
-		docker compose restart
+restart: down up
 
-    clean:
-		rm -rf data/*
+logs:
+	$(COMPOSE) logs -f
+
+ps:
+	$(COMPOSE) ps
+
+build:
+	$(COMPOSE) build --no-cache
+
+pull:
+	$(COMPOSE) pull
+
+stop:
+	$(COMPOSE) stop
+
+clean: down
+	docker builder prune -f
+	docker system prune -f

@@ -16,10 +16,12 @@ with DAG(
 
     compact = DockerOperator(
         task_id="compact_yesterday",
-        image="bitnami/spark:3.5.1",
+        # Use the same official Spark image as the rest of the cluster
+        image="apache/spark:3.5.1-python3",
         auto_remove=True,
         command=(
-            "/opt/bitnami/spark/bin/spark-submit "
+            # Note the updated path for the official image
+            "/opt/spark/bin/spark-submit "
             "/opt/spark-apps/batch_compact.py"
         ),
         mounts=[
