@@ -21,3 +21,6 @@ monitoring/prometheus.yml
 .env
 .env.local
 .env.*.local
+.env
+.env.local
+.env.*.local
